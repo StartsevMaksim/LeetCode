@@ -8350,3 +8350,340 @@ class NumSubseq:
             result += 2 ** (max_index - min_index)
             result %= 10 ** 9 + 7
         return result
+
+#3440. Reschedule Meetings for Maximum Free Time II
+class MaxFreeTime:
+    @staticmethod
+    def _getFreePlaces(prefix):
+        result = [0]
+        for free_place in prefix[:-3:2]:
+            result.append(max(result[-1], free_place))
+        return result            
+    
+    def maxFreeTime(self, eventTime, startTime, endTime):
+        cur_time = 0
+        prefix = []
+        for start, end in zip(startTime, endTime):
+            prefix.extend([start-cur_time, start-end])
+            cur_time = end
+        prefix.append(eventTime-cur_time)
+        left_to_right, right_to_left = self._getFreePlaces(prefix), self._getFreePlaces(prefix[::-1])[::-1]
+        free_places = [max(left, right) for left, right in zip(left_to_right, right_to_left)]
+        result = 0
+        for index, meeting in enumerate(prefix[1::2]):
+            left = index * 2
+            right = left + 2
+            free_space = prefix[left] + prefix[right] - meeting
+            if free_places[index] + meeting < 0:
+                free_space += meeting
+            result = max(result, free_space)
+        return result
+
+#3136. Valid Word
+class IsValid:
+    def isValid(self, word):
+        word = word.lower()
+        if len(word) < 3:
+            return False
+        match = re.search(r'[^0-9a-z]', word)
+        if match is not None:
+            return False
+        match = re.search(r'[aeiou]', word)
+        if match is None:
+            return False
+        match = re.search(r'[^aeiou]', word)
+        if match is None:
+            return False
+        return True
+
+#3202. Find the Maximum Length of Valid Subsequence II
+class MaximumLength:
+    def maximumLength(self, nums, k):
+        print(len(nums))
+        mods = [num % k for num in nums]
+        checked = set()
+        result = 0
+        for index, mod in enumerate(mods):
+            if mod not in checked:
+                combinations = deque([(None, mod, index, 1)])
+                while combinations:
+                    prev_mod, cur_mod, cur_index, cur_length = combinations.pop()
+                    result = max(result, cur_length)
+                    cur_checked = set()
+                    for next_index, next_mod in enumerate(mods[cur_index+1:], cur_index+1):
+                        if (next_mod not in cur_checked) and ((prev_mod is None) 
+                                                              or (prev_mod == next_mod)):
+                            combinations.append((cur_mod, next_mod, next_index, cur_length+1))
+                            cur_checked.add(next_mod)
+            checked.add(mod)
+        return result
+
+#1751. Maximum Number of Events That Can Be Attended II
+class MaxValue:
+    def maxValue(self, events, k):
+        start_end = {}
+        for start, end, val in events:
+            start_end.setdefault(start, list()).append((end, val))
+        start_days = deque(sorted(start_end.keys()))
+        start_days.append(float('inf'))
+        best_schedule = {amount: (0, []) for amount in range(1, k+1)} #(val, visited_events)
+        end_days_prior = []
+        while start_days:
+            cur_day = start_days.popleft()
+            while end_days_prior and (end_days_prior[0][0] < cur_day):
+                end, val, visited_events = heapq.heappop(end_days_prior)
+                amount = len(visited_events)
+                best_schedule[amount] = max(best_schedule[amount],
+                                            (val, visited_events),
+                                            key=(lambda x: x[0]))
+            for cur_end, cur_val in start_end.get(cur_day, []):
+                for best_val, best_visited_events in best_schedule.values():
+                    new_visited_events = list(best_visited_events)
+                    replace_event = 0
+                    if len(new_visited_events) == k:
+                        replace_event = heapq.heappop(new_visited_events)
+                    heapq.heappush(new_visited_events, cur_val)
+                    new_val = best_val + cur_val - replace_event
+                    heapq.heappush(end_days_prior, (cur_end, new_val, new_visited_events))
+        return max(best_schedule.values())[0]
+
+#3439. Reschedule Meetings for Maximum Free Time I
+class MaxFreeTime:
+    @staticmethod
+    def _getPrefix(startTime, endTime, eventTime):
+        result = []
+        cur_time = 0
+        for start, end in zip(startTime, endTime):
+            result.append(start-cur_time)
+            cur_time = end
+        result.append(eventTime-cur_time)
+        return result
+        
+    def maxFreeTime(self, eventTime, k, startTime, endTime):
+        prefix = self._getPrefix(startTime, endTime, eventTime)
+        left, right = 0, k
+        free_space = sum(prefix[left:right+1])
+        result = free_space
+        while right < len(prefix) - 1:
+            right += 1
+            free_space += (-prefix[left] + prefix[right])
+            left += 1
+            result = max(result, free_space)
+        return result
+
+#2402. Meeting Rooms III
+class MostBooked:
+    @staticmethod
+    def _makeMeeting(active, waiting, rooms, penalty, start_end):
+        start = heapq.heappop(waiting)
+        end = penalty + start_end[start]
+        room = heapq.heappop(rooms)
+        heapq.heappush(active, (end, room))
+
+    @staticmethod
+    def _releaseRoom(active, rooms, result):
+        end, room = heapq.heappop(active)
+        heapq.heappush(rooms, room)
+        result[room] += 1
+    
+    def mostBooked(self, n, meetings):
+        start_end = {start: end for start, end in meetings}
+        rooms = list(range(n))
+        heapq.heapify(rooms)
+        waiting = list(start_end.keys())
+        heapq.heapify(waiting)
+        active = []
+        result = {room: 0 for room in range(n)}
+        while waiting or active:
+            #Set Cur Time
+            cur_time = waiting[0] if waiting else active[0][0]
+            #Release Rooms
+            while active and (active[0][0] <= cur_time):
+                self._releaseRoom(active, rooms, result)
+            if waiting:
+                #Attend Room
+                penalty = 0
+                if not rooms:
+                    penalty = active[0][0] - waiting[0]
+                    self._releaseRoom(active, rooms, result)
+                self._makeMeeting(active, waiting, rooms, penalty, start_end)
+        return min(filter(lambda x: x[1]==max(result.values()), result.items()))[0]
+
+#3201. Find the Maximum Length of Valid Subsequence I
+class MaximumLength:
+    def maximumLength(self, nums):
+        even, odd, variable = 0, 0, 1
+        last_var = nums[0] % 2
+        for num in nums:
+            even += (num % 2 == 0)
+            odd += (num % 2 == 1)
+            variable += (num % 2 != last_var)
+            last_var = (last_var + (num % 2 != last_var)) % 2
+        return max(even, odd, variable)
+
+#2410. Maximum Matching of Players With Trainers
+class MatchPlayersAndTrainers:
+    def matchPlayersAndTrainers(self, players, trainers):
+        players = deque(sorted(players))
+        trainers = deque(sorted(trainers))
+        result = 0
+        while players and trainers:
+            trainer = trainers.popleft()
+            if trainer >= players[0]:
+                players.popleft()
+                result += 1
+        return result
+
+#1957. Delete Characters to Make Fancy String
+class MakeFancyString:
+    def makeFancyString(self, s):
+        result = list(s[:2])
+        for index, char in enumerate(s[2:], 2):
+            if not ((char == s[index-1]) and (char == s[index-2])):
+                result.append(char)
+        return ''.join(result)
+
+#1695. Maximum Erasure Value
+class MaximumUniqueSubarray:
+    def maximumUniqueSubarray(self, nums):
+        left, right = 0, 0
+        result = 0
+        cur_subarray, cur_sum = {}, 0
+        while right < len(nums):
+            cur_subarray[nums[right]] = cur_subarray.setdefault(nums[right], 0) + 1
+            cur_sum += nums[right]
+            while cur_subarray[nums[right]] > 1:
+                cur_sum -= nums[left]
+                cur_subarray[nums[left]] -= 1
+                left += 1
+            result = max(result, cur_sum)
+            right += 1
+        return result
+
+#1717. Maximum Score From Removing Substrings
+class MaximumGain:
+    def _checkLastTwo(self, substring, target):
+        if len(substring) < 2:
+            return False
+        return (substring[-2] + substring[-1]) == target
+
+    def _removeSubstring(self, string, target, score):
+        result = 0
+        substring = deque([])
+        for letter in string:
+            substring.append(letter)
+            while self._checkLastTwo(substring, target):
+                substring.pop()
+                substring.pop()
+                result += score
+        return result, ''.join(substring)
+        
+    def maximumGain(self, s, x, y):
+        gain = {'ab': x, 'ba': y}
+        result = 0
+        for target, score in sorted(gain.items(), key=(lambda item: item[1]), reverse=True):
+            res, s = self._removeSubstring(s, target, score)
+            result += res
+        return result
+
+#2322. Minimum Score After Removals on a Tree
+class MinimumScore:
+    def _initGraphLeafs(self, edges):
+        graph, leafs = dict(), set(range(len(edges)+1))
+        for begin, end in edges:
+            graph.setdefault(begin, set()).add(end)
+            graph.setdefault(end, set()).add(begin)
+            if len(graph[begin]) > 1:
+                leafs.discard(begin)
+            if len(graph[end]) > 1:
+                leafs.discard(end)
+        return graph, leafs
+        
+    def _checkAllRemovals(self, graph, remain_leafs, init_nums, full_score, first_score):
+        node_degree = {node: len(neighbours) for node, neighbours in graph.items()}
+        leafs = set(remain_leafs)
+        nums = list(init_nums)
+        result = float('inf')
+        while leafs:
+            second_comp = leafs.pop()
+            second_score = nums[second_comp]
+            third_score = full_score ^ first_score ^ second_score
+            score = max(first_score, second_score, third_score) - min(first_score, second_score, third_score)
+            result = min(result, score)
+            node_degree[second_comp] -= 1
+            second_neighbour = list(filter(lambda node: node_degree[node]>0, graph[second_comp]))[0]
+            node_degree[second_neighbour] -= 1
+            if node_degree[second_neighbour] == 0:
+                leafs.remove(second_neighbour)
+            elif node_degree[second_neighbour] == 1:
+                leafs.add(second_neighbour)
+            nums[second_neighbour] ^= nums[second_comp]     
+        return result
+        
+    def minimumScore(self, nums, edges):
+        graph, leafs = self._initGraphLeafs(edges)
+        full_score = functools.reduce(lambda x,y: x^y, nums)
+        result = float('inf')
+        while leafs:
+            first_comp = leafs.pop()
+            first_score = nums[first_comp]
+            first_neighbour = graph.pop(first_comp).pop()
+            graph[first_neighbour].remove(first_comp)
+            if not graph[first_neighbour]:
+                graph.pop(first_neighbour)
+                leafs.remove(first_neighbour)
+            if len(graph.get(first_neighbour, [])) == 1:
+                leafs.add(first_neighbour)
+            score = self._checkAllRemovals(graph, leafs, nums, full_score, first_score)
+            result = min(result, score)
+            nums[first_neighbour] ^= nums[first_comp]
+        return result
+
+#3487. Maximum Unique Subarray Sum After Deletion
+class MaxSum:
+    def maxSum(self, nums):
+        subarray = set()
+        max_elem = float('-inf')
+        result = 0
+        for num in nums:
+            max_elem = max(num, max_elem)
+            if (num > 0) and (num not in subarray):
+                result += num
+                subarray.add(num)
+        return result if subarray else max_elem
+
+#2411. Smallest Subarrays With Maximum Bitwise OR
+class SmallestSubarrays:
+    @staticmethod
+    def _binRepr(num):
+        return {index: 1 for index, bin_num in enumerate(bin(num)[:1:-1]) if bin_num == '1'}
+
+    @staticmethod
+    def _binCompare(subseq, target):
+        for index in target.keys():
+            if index not in subseq:
+                return False
+        return True
+            
+    def smallestSubarrays(self, nums):
+        prefix = deque([nums[-1]])
+        for num in nums[-2::-1]:
+            prefix.appendleft(max(prefix[0], prefix[0]|num))
+        prefix = list(map(self._binRepr, prefix))
+        bin_nums = list(map(self._binRepr, nums))
+        left, right = 0, 0
+        result = []
+        cur_subseq = dict(bin_nums[0])
+        while left < len(bin_nums):
+            while (right < left) or not self._binCompare(cur_subseq, prefix[left]):
+                right += 1
+                for add_index in bin_nums[right].keys():
+                    cur_subseq[add_index] = cur_subseq.setdefault(add_index, 0) + 1
+            result.append(right-left+1)
+            for del_index in bin_nums[left].keys():
+                cur_subseq[del_index] -= 1
+                if cur_subseq[del_index] == 0:
+                    cur_subseq.pop(del_index)
+            left += 1
+        return result
+

@@ -8687,3 +8687,366 @@ class SmallestSubarrays:
             left += 1
         return result
 
+#904. Fruit Into Baskets
+class TotalFruit:
+    def totalFruit(self, fruits):
+        left, right = 0, -1
+        fruit_types = {}
+        result = 0
+        while right < len(fruits) - 1:
+            right += 1
+            add_fruit = fruits[right]
+            fruit_types[add_fruit] = fruit_types.setdefault(add_fruit, 0) + 1
+            while len(fruit_types) > 2:
+                del_fruit = fruits[left]
+                fruit_types[del_fruit] -= 1
+                if not fruit_types[del_fruit]:
+                    fruit_types.pop(del_fruit)
+                left += 1
+            result = max(result, right-left+1)
+        return result
+
+#2461. Maximum Sum of Distinct Subarrays With Length K
+class MaximumSubarraySum:
+    def maximumSubarraySum(self, nums, k):
+        cur_sum = 0
+        met_nums = {}
+        for num in nums[:k]:
+            met_nums[num] = met_nums.setdefault(num, 0) + 1
+            cur_sum += num
+        index = k - 1
+        result = cur_sum if len(met_nums) == k else 0
+        while index < len(nums) - 1:
+            index += 1
+            add_num = nums[index]
+            del_num = nums[index-k]
+            met_nums[add_num] = met_nums.setdefault(add_num, 0) + 1
+            met_nums[del_num] -= 1
+            cur_sum += add_num - del_num
+            if not met_nums[del_num]:
+                met_nums.pop(del_num)
+            if len(met_nums) == k:
+                result = max(result, cur_sum)
+        return result
+
+#3477. Fruits Into Baskets II
+class NumOfUnplacedFruits:
+    def numOfUnplacedFruits(self, fruits, baskets):
+        result = 0
+        for fruit in fruits:
+            del_index = 0
+            while del_index < len(baskets):
+                if baskets[del_index] >= fruit:
+                    baskets.pop(del_index)
+                    result += 1
+                    break
+                del_index += 1
+        return len(fruits) - result
+
+#2106. Maximum Fruits Harvested After at Most K Steps
+class MaxTotalFruits:
+    def maxTotalFruits(self, fruits, startPos, k):
+        prefix = [0]
+        index = 0
+        for pos, amount in fruits:
+            prefix.extend([prefix[-1]]*(pos-index))
+            prefix.append(prefix[-1]+amount)
+            index = pos + 1
+        if startPos > len(prefix) - 2:
+            prefix.extend([prefix[-1]]*(startPos-(len(prefix) - 2)))
+        
+        left_right = []
+        for right, left in enumerate(range(k, 0, -2)):
+            left_right.append((left, right))
+        rev_arr = list(map(lambda x: tuple(reversed(x)), left_right))
+        left_right.extend(rev_arr)
+        result = prefix[startPos+1] - prefix[startPos]
+        for left, right in left_right:
+            begin = max(startPos - left, 0)
+            end = min(startPos + right, len(prefix) - 2)
+            result = max(result, prefix[end+1]-prefix[begin])
+            begin = min(begin+2, startPos)
+        return result
+
+#118. Pascal's Triangle
+class Generate:
+    def generate(self, numRows):
+        triangle = [[1]]
+        for _ in range(numRows):
+            add_arr = [1]
+            for index, num in enumerate(triangle[-1][1:]):
+                add_arr.append(triangle[-1][index]+num)
+            add_arr.append(1)
+            triangle.append(add_arr)
+        return triangle[numRows]
+
+#2561. Rearranging Fruits
+class MinCost:
+    @staticmethod
+    def _getBasketDict(basket):
+        result = {}
+        for fruit in basket:
+            result[fruit] = result.setdefault(fruit, 0) + 1
+        return result
+
+    @staticmethod
+    def _getReplaceArr(full_amount, basket):
+        result = []
+        for amount, value in basket.items():
+            target_value = full_amount[amount] // 2
+            result.extend([amount]*max(0, value-target_value))
+        return result            
+        
+    def minCost(self, basket1, basket2):
+        basket1_dict = self._getBasketDict(basket1)
+        basket2_dict = self._getBasketDict(basket2)
+        full_amount = {amount: basket1_dict.get(amount, 0) + basket2_dict.get(amount, 0) 
+                       for amount in {**basket1_dict, **basket2_dict}.keys()}
+        if sum(filter(lambda x: x%2==1, full_amount.values())) != 0:
+            return -1
+        min_amount = min(full_amount.keys())
+        basket1_replace = self._getReplaceArr(full_amount, basket1_dict)
+        basket1_replace.sort(reverse=True)
+        basket2_replace = self._getReplaceArr(full_amount, basket2_dict)
+        basket2_replace.sort()
+        result = 0
+        for amount1, amount2 in zip(basket1_replace, basket2_replace):
+            result += min(min_amount*2, min(amount1, amount2))
+        return result
+
+#2332. The Latest Time to Catch a Bus
+class LatestTimeCatchTheBus:
+    def latestTimeCatchTheBus(self, buses, passengers, capacity):
+        buses = deque(sorted(buses))
+        passengers = deque(sorted(passengers))
+        booking_time = set()
+        result = 1
+        while buses:
+            bus_time = buses.popleft()
+            free_seats = capacity
+            while passengers and (passengers[0] <= bus_time) and free_seats:
+                pass_time = passengers.popleft()
+                booking_time.add(pass_time)
+                free_seats -= 1
+                latest_time = pass_time - 1
+                if latest_time not in booking_time:
+                    result = latest_time
+            if free_seats and bus_time not in booking_time:
+                result = bus_time
+        return result
+
+#3479. Fruits Into Baskets III
+class NumOfUnplacedFruits:
+    def numOfUnplacedFruits(self, fruits, baskets):
+        block_amount = int(math.sqrt(len(baskets)))
+        block_length = len(baskets) // block_amount
+        blocks = []
+        for block_no in range(block_amount):
+            begin = block_no * block_length
+            end = len(baskets) if (block_no == block_amount - 1) else (begin + block_length)
+            block = baskets[begin:end]
+            blocks.append([max(block), block])
+        placed_fruits = 0
+        for fruit in fruits:
+            for block in blocks:
+                if fruit <= block[0]:
+                    for index, num in enumerate(block[1]):
+                        if fruit <= num:
+                            block[1][index] = 0
+                            break
+                    block[0] = max(block[1])
+                    placed_fruits += 1
+                    break
+        return len(fruits) - placed_fruits
+
+#3363. Find the Maximum Number of Fruits Collected
+class MaxCollectedFruits:
+    @staticmethod
+    def _transformMatrix(matrix, n):
+        result = []
+        for col in range(n):
+            row_arr = []
+            for row in range(n):
+                row_arr.append(matrix[row][col])
+            result.append(row_arr)
+        return result
+
+    @staticmethod
+    def _passMatrix(matrix, n):
+        rooms = deque([(n-1, 0)])
+        while rooms:
+            cur_row, cur_col = rooms.popleft()
+            prev_max_val = 0
+            prev_col = cur_col - 1
+            if prev_col >= 0:
+                for prev_row in range(max(n-cur_col, cur_row-1), min(cur_row+2, n)):
+                    prev_max_val = max(prev_max_val, matrix[prev_row][prev_col])
+            matrix[cur_row][cur_col] += prev_max_val
+            if (cur_row - 1) > (cur_col + 1):
+                rooms.append((cur_row-1, cur_col+1))
+            if (cur_row == n - 1) and (cur_col < n - 2):
+                rooms.append((cur_row, cur_col+1))
+        return matrix[n-1][n-2]
+        
+    def maxCollectedFruits(self, fruits):
+        n = len(fruits)
+        bottom_sum = self._passMatrix(fruits, n)
+        fruits = self._transformMatrix(fruits, n)
+        side_sum = self._passMatrix(fruits, n)
+        diag_sum = sum(fruits[k][k] for k in range(n))
+        fruits = self._transformMatrix(fruits, n)
+        print(fruits)
+        return bottom_sum + side_sum + diag_sum
+
+#2210. Count Hills and Valleys in an Array
+class CountHillValley:
+    @staticmethod
+    def _makeUniqueNums(nums):
+        result = [nums[0]]
+        for num in nums[1:]:
+            if num != result[-1]:
+                result.append(num)
+        return result
+        
+    def countHillValley(self, nums):
+        nums = self._makeUniqueNums(nums)
+        if len(nums) == 1:
+            return 0
+        behaviour = [1 if nums[0] < nums[1] else -1]
+        for index, num in enumerate(nums[1:]):
+            behaviour.append(1 if num > nums[index] else -1)
+        print(behaviour)
+        behaviour = self._makeUniqueNums(behaviour)
+        return len(behaviour) - 1
+
+#2438. Range Product Queries of Powers
+class ProductQueries:
+    @staticmethod
+    def _getPower(num):
+        return 2 ** int(math.log2(num))
+        
+    def productQueries(self, n, queries):
+        modulo = 10 ** 9 + 7
+        powers = deque([])
+        while n > 0:
+            next_power = self._getPower(n)
+            powers.appendleft(next_power)
+            n -= next_power
+        prefix = [1]
+        for num in powers:
+            prefix.append(prefix[-1]*num)
+        result = []
+        for begin, end in queries:
+            result.append((prefix[end+1]//prefix[begin])%modulo)
+        return result
+
+#935. Knight Dialer
+class KnightDialer:
+    def knightDialer(self, n):
+        modulo = 10 ** 9 + 7
+        routes = {0: {4,6},
+                  1: {6,8},
+                  2: {7,9},
+                  3: {4,8},
+                  4: {0,3,9},
+                  5: {},
+                  6: {0,1,7},
+                  7: {2,6},
+                  8: {1,3},
+                  9: {2,4}}
+        positions = [[{cell: 1}] for cell in range(10)]
+        for row in positions:
+            while len(row) < n:
+                add_pos = {}
+                for last_position, last_amount in row[-1].items():
+                    for next_position in routes[last_position]:
+                        add_pos[next_position] = add_pos.setdefault(next_position, 0) + last_amount
+                row.append(add_pos)
+        return sum([sum(pos[n-1].values())%modulo for pos in positions]) % modulo
+
+#869. Reordered Power of 2
+class ReorderedPowerOf2:
+    @staticmethod
+    def _getDigits(num):
+        result = {}
+        while num:
+            digit = num % 10
+            result[digit] = result.setdefault(digit, 0) + 1
+            num //= 10
+        return result
+
+    @staticmethod
+    def _checkPower(power, digits):
+        digits = dict(digits)
+        while power:
+            power_digit = power % 10
+            if (power_digit not in digits) or (digits[power_digit] == 0):
+                return False
+            digits[power_digit] -= 1
+            power //= 10
+        return sum(digits.values()) == 0
+        
+    def reorderedPowerOf2(self, n):
+        digits = self._getDigits(n)
+        max_num = int(''.join(str(digit) * amount for digit, amount in sorted(digits.items(), reverse=True)))
+        cur_power = 1
+        while cur_power <= max_num:
+            if self._checkPower(cur_power, digits):
+                return True
+            cur_power *= 2
+        return False
+
+#1457. Pseudo Palindromic Paths in a Binary Tree
+class pseudoPalindromicPaths:
+    @staticmethod
+    def _isPseudoPalindromic(path):
+        odd_amount = functools.reduce(lambda x,y: x+(y%2), path.values(), 0)
+        return odd_amount <= 1
+    
+    def pseudoPalindromicPaths(self, root):
+        stack = deque([(root, {root.val: 1})])
+        result = 0
+        while stack:
+            cur_node, cur_path = stack.pop()
+            if (cur_node.left is None) and (cur_node.right is None):
+                result += self._isPseudoPalindromic(cur_path)
+            for next_node in (cur_node.left, cur_node.right):
+                if next_node is not None:
+                    next_val = next_node.val
+                    next_path = dict(cur_path)
+                    next_path[next_val] = next_path.setdefault(next_val, 0) + 1
+                    stack.append((next_node, next_path))
+        return result
+
+#1552. Magnetic Force Between Two-balls
+class MaxDistance:
+    @staticmethod
+    def _isPossible(position, gap, balls):
+        cur_pos = float('-inf')
+        remain_balls = balls
+        for pos in position:
+            if cur_pos + gap <= pos:
+                cur_pos = pos
+                remain_balls -= 1
+        return (remain_balls <= 0)
+    
+    def maxDistance(self, position, m):
+        position.sort()
+        left, right = 1, position[-1] - position[0] + 1
+        print(left, right)
+        while right - left > 1:
+            middle = (right + left) // 2
+            print(middle, self._isPossible(position, middle, m))
+            if self._isPossible(position, middle, m):
+                left = middle
+            else:
+                right = middle
+        return left
+
+#326. Power of Three
+class IsPowerOfThree:
+    def isPowerOfThree(self, n):
+        cur_num = 1
+        while cur_num < n:
+            cur_num *= 3
+        return (cur_num == n)

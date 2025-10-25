@@ -9050,3 +9050,749 @@ class IsPowerOfThree:
         while cur_num < n:
             cur_num *= 3
         return (cur_num == n)
+
+#3195. Find the Minimum Area to Cover All Ones I
+class MinimumArea:
+    def minimumArea(self, grid):
+        min_row, max_row = len(grid) - 1, 0
+        min_col, max_col = len(grid[0]) - 1, 0
+        for row_index, row in enumerate(grid):
+            for col_index, num in enumerate(row):
+                if num == 1:
+                    min_row = min(min_row, row_index)
+                    max_row = max(max_row, row_index)
+                    min_col = min(min_col, col_index)
+                    max_col = max(max_col, col_index)
+        return (max_row - min_row + 1) * (max_col - min_col + 1)
+
+#3025. Find the Number of Ways to Place People I
+class numberOfPairs:
+    def _checkInterception(self, points, xM, yM, xS, yS):
+        include_points = 0
+        for x, y in points:
+            include_points += ((xM <= x <= xS) and (yS <= y <= yM))
+        return include_points > 2
+
+    def _chechPoints(self, points, main_point, subject_point):
+        xM, yM = main_point
+        xS, yS = subject_point
+        return ((xM <= xS) and (yM >= yS) and not self._checkInterception(points, xM, yM, xS, yS))
+            
+    def numberOfPairs(self, points):
+        result = 0
+        for index_1, point_1 in enumerate(points[:-1], 1):
+            for point_2 in points[index_1:]:
+                result += self._chechPoints(points, point_1, point_2) or self._chechPoints(points, point_2, point_1)
+        return result
+
+#3021. Alice and Bob Playing Flower Game
+class FlowerGame:
+    def _getEvenOdd(self, num):
+        even = num // 2
+        odd = even + (num % 2)
+        return even, odd
+    
+    def flowerGame(self, n, m):
+        x_even, x_odd = self._getEvenOdd(n)
+        y_even, y_odd = self._getEvenOdd(m)
+        return x_even * y_odd + x_odd * y_even
+
+#3027. Find the Number of Ways to Place People II
+class NumberOfPairs:
+    def _getSortedY(self, points):
+        result = {}
+        for x, y in points:
+            result.setdefault(x, list()).append(y)
+        for vals in result.values():
+            vals.sort()
+        return result
+
+    def _findNearest(self, arr, target):
+        nearest_index = bisect.bisect_right(arr, target) - 1
+        if nearest_index < 0:
+            return float('-inf')
+        return arr[nearest_index]        
+    
+    def numberOfPairs(self, points):
+        points_dict = self._getSortedY(points)
+        sortedX = sorted(points_dict.keys())
+        result = 0
+        for main_index, main_x in enumerate(sortedX):
+            for main_y in points_dict[main_x]:
+                max_y = float('-inf')
+                temp_res = 0
+                for subject_x in sortedX[main_index:]:
+                    if max_y == main_y:
+                        break
+                    temp_max = self._findNearest(points_dict[subject_x], main_y - (subject_x==main_x))
+                    if temp_max > max_y:
+                        max_y = temp_max
+                        result += 1
+                        temp_res += 1
+        return result
+
+#3516. Find Closest Person
+class FindClosest:
+    def findClosest(self, x, y, z):
+        first_third = abs(z-x)
+        second_third = abs(z-y)
+        if first_third > second_third:
+            return 1
+        elif second_third > first_third:
+            return 2
+        else:
+            return 0
+
+#3446. Sort Matrix by Diagonals
+class SortMatrix:
+    def sortMatrix(self, grid):
+        sorted_diag = {}
+        n = len(grid)
+        for row_index, row in enumerate(grid):
+            for col_index, num in enumerate(row):
+                length = col_index - row_index
+                diag = sorted_diag.setdefault(length, list())
+                sort_num = (num * (-1 if length <= 0 else 1), num)
+                heapq.heappush(diag, sort_num)
+        result = [[heapq.heappop(sorted_diag[col-row])[1] for col in range(n)] for row in range(n)]
+        return result
+
+#1190. Reverse Substrings Between Each Pair of Parentheses
+class ReverseParentheses:
+    def _reverseSubArray(self, string_arr, begin, end):
+        for iter_num in range((end-begin+1)//2):
+            first, second = begin + iter_num, end - iter_num
+            string_arr[first], string_arr[second] = string_arr[second], string_arr[first]
+    
+    def _getReverseLevels(self, string):
+        result, degree = {}, 0
+        for index, char in enumerate(string):
+            degree += (char == '(')
+            if char in ('(', ')'):
+                result.setdefault(degree, deque()).append(index)
+            degree -= (char == ')')
+        return result
+        
+    def reverseParentheses(self, s):
+        levels = self._getReverseLevels(s)
+        string_arr = list(s)
+        for lvl, indexes in sorted(levels.items(), reverse=True):
+            while indexes:
+                begin, end = indexes.popleft(), indexes.popleft()
+                self._reverseSubArray(string_arr, begin, end)
+        return ''.join(filter(lambda x: x not in ('(', ')'), string_arr))
+
+#1317. Convert Integer to the Sum of Two No-Zero Integers
+class GetNoZeroIntegers:
+    def _checkNumber(self, number):
+        for char in str(number):
+            if char == '0':
+                return False
+        return True            
+        
+    def getNoZeroIntegers(self, n):
+        cur_num = 1
+        while cur_num <= n // 2:
+            if self._checkNumber(cur_num) and self._checkNumber(n-cur_num):
+                return [cur_num, n-cur_num]
+            cur_num += 1
+
+#2327. Number of People Aware of a Secret
+class PeopleAwareOfSecret:
+    def _updateSchedule(self, schedule, index, delay, forget, sharing):
+        next_index = index + delay
+        if next_index < len(schedule):
+            schedule[next_index][0] += sharing
+        next_index = index + forget
+        if next_index < len(schedule):
+            schedule[next_index][1] += sharing
+    
+    def peopleAwareOfSecret(self, n, delay, forget):
+        modulo = 10 ** 9 + 7
+        schedule = [[0, 0] for _ in range(n)]
+        aware, sharing = 1, 0
+        self._updateSchedule(schedule, 0, delay, forget, 1)
+        for index in range(1, len(schedule)):
+            sharing += schedule[index][0] - schedule[index][1]
+            aware += sharing - schedule[index][1]
+            self._updateSchedule(schedule, index, delay, forget, sharing)
+        return aware % modulo
+
+#1574. Shortest Subarray to be Removed to Make Array Sorted
+class FindLengthOfShortestSubarray:
+    def findLengthOfShortestSubarray(self, arr):
+        n = len(arr)
+        sufix_begin = n - 1
+        for index, num in enumerate(arr[-2::-1], 1):
+            if num > arr[n-index]:
+                break
+            sufix_begin -= 1
+        result = sufix_begin
+        for prefix_end, num in enumerate(arr[:sufix_begin]):
+            if (prefix_end > 0) and (arr[prefix_end-1] > num):
+                break
+            new_sufix_begin = sufix_begin + bisect.bisect_left(arr[sufix_begin:], num)
+            result = min(result, new_sufix_begin-prefix_end-1) 
+        return result
+
+#1304. Find N Unique Integers Sum up to Zero
+class SumZero:
+    def sumZero(self, n):
+        d = 4
+        result = [-d*(n-1)//2]
+        for _ in range(n-1):
+            result.append(result[-1]+d)
+        return result
+
+#1733. Minimum Number of People to Teach
+class MinimumTeachings:
+    def _findTeachedAmount(self, friends, known_languages, new_lang):
+        teached_men = set()
+        for man, mans_friends in friends.items():
+            mans_lang = known_languages[man]
+            if new_lang in mans_lang:
+                continue
+            for friend in mans_friends:
+                friends_lang = known_languages[friend]
+                if not mans_lang & friends_lang:
+                    teached_men.add(man)
+                    break
+        return len(teached_men)        
+    
+    def minimumTeachings(self, n, languages, friendships):
+        friends = {}
+        for first, second in friendships:
+            friends.setdefault(first, set()).add(second)
+            friends.setdefault(second, set()).add(first)
+        known_languages = {man+1: set(known_lang) for man, known_lang in enumerate(languages)}
+
+        result = float('inf')
+        for new_lang in range(1, n+1):
+            needed_teach = self._findTeachedAmount(friends, known_languages, new_lang)
+            result = min(result, needed_teach)
+        return result
+
+#2785. Sort Vowels in a String
+class SortVowels:
+    def sortVowels(self, s):
+        vowels = {'a', 'e', 'i', 'o', 'u'}
+        vowels_indexes = []
+        sorted_vowels = []
+        string_arr = []
+        for index, char in enumerate(s):
+            string_arr.append(char)
+            if char.lower() in vowels:
+                bisect.insort(sorted_vowels, char)
+                vowels_indexes.append(index)
+        for index, char in zip(vowels_indexes, sorted_vowels):
+            string_arr[index] = char
+        return ''.join(string_arr)
+
+#3227. Vowels Game in a String
+class DoesAliceWin:
+    def doesAliceWin(self, s):
+        lowels = {'a', 'e', 'i', 'o', 'u'}
+        result = functools.reduce(lambda x,y: x+(y in lowels), s, 0)
+        return result > 0
+
+#966. Vowel Spellchecker
+class Spellchecker(object):
+    def spellchecker(self, wordlist, queries):
+        capitalization_match = dict()
+        vowel_errors_match = dict()
+        exactly_match = set()
+        for word in wordlist:
+            exactly_match.add(word)
+            cap_word = word.lower()
+            if cap_word not in capitalization_match:
+                capitalization_match[cap_word] = word
+            vow_err_word = re.sub(r'[aeiou]', '0', word.lower())
+            if vow_err_word not in vowel_errors_match:
+                vowel_errors_match[vow_err_word] = word
+        result = []
+        for word in queries:
+            if word in exactly_match:
+                result.append(word)
+                continue
+            cap_word = word.lower()
+            if cap_word in capitalization_match:
+                result.append(capitalization_match[cap_word])
+                continue
+            vow_err_word = re.sub(r'[aeiou]', '0', word.lower())
+            if vow_err_word in vowel_errors_match:
+                result.append(vowel_errors_match[vow_err_word])
+                continue
+            result.append('')
+        return result
+
+#1935. Maximum Number of Words You Can Type
+class CanBeTypedWords:
+    def _checkWord(self, word, exc_letters):
+        for letter in word:
+            if letter in exc_letters:
+                return False
+        return True
+        
+    def canBeTypedWords(self, text, brokenLetters):
+        result = 0
+        exc_letters = set(brokenLetters)
+        for word in text.split(' '):
+            result += self._checkWord(word, exc_letters)
+        return result
+
+#2197. Replace Non-Coprime Numbers in Array
+class ReplaceNonCoprimes:
+    @functools.cache
+    def _findGCD(self, a, b):
+        greater = max(a, b)
+        less = min(a, b)
+        while less > 0:
+            residual = greater - greater // less * less
+            greater = less
+            less = residual
+        return greater
+    
+    def replaceNonCoprimes(self, nums):
+        nums = deque(nums)
+        result = deque([nums.popleft()])
+        while nums:
+            while (len(result) >= 2) and (self._findGCD(result[-1], result[-2]) > 1):
+                lower_gcd = self._findGCD(result[-1], result[-2])
+                a, b = result.pop(), result.pop()
+                result.append(a*b//lower_gcd)
+            
+            upper_gcd = self._findGCD(result[-1], nums[0])
+            if upper_gcd > 1:
+                a, b = result.pop(), nums.popleft()
+                result.append(a*b//upper_gcd)
+            else:
+                result.append(nums.popleft())
+        return result
+
+#3541. Find Most Frequent Vowel and Consonant
+class MaxFreqSum:
+    def maxFreqSum(self, s):
+        vowels = {'a', 'e', 'i', 'o', 'u'}
+        letters_freq = {}
+        max_vowels, max_consonant = 0, 0
+        for letter in s:
+            letters_freq[letter] = letters_freq.setdefault(letter, 0) + 1
+            if letter in vowels:
+                max_vowels = max(max_vowels, letters_freq[letter])
+            else:
+                max_consonant = max(max_consonant, letters_freq[letter])
+        return max_vowels + max_consonant
+
+#2353. Design a Food Rating System
+class FoodRatings:
+    def _checkRelevance(self, cuisine):
+        food = self.top_rated_food[cuisine][0][1]
+        return (self.top_rated_food[cuisine][0][0] == self.foods_rating[food])
+    
+    def __init__(self, foods, cuisines, ratings):
+        self.foods_rating = dict()
+        self.foods_cuisines = dict()
+        self.top_rated_food = dict()
+        for food, cuisine, rating in zip(foods, cuisines, ratings):
+            self.foods_rating[food] = -rating
+            self.foods_cuisines[food] = cuisine
+            heapq.heappush(self.top_rated_food.setdefault(cuisine, list()),
+                           (-rating, food))
+        
+    def changeRating(self, food, newRating):
+        cuisine = self.foods_cuisines[food]
+        self.foods_rating[food] = -newRating
+        heapq.heappush(self.top_rated_food[cuisine], (-newRating, food))       
+
+    def highestRated(self, cuisine):
+        while not self._checkRelevance(cuisine):
+            heapq.heappop(self.top_rated_food[cuisine])
+        return self.top_rated_food[cuisine][0][1]
+
+#3408. Design Task Manager
+class TaskManager(object):    
+    @staticmethod
+    def _getHeapIndex(priority, taskId):
+        base = 10 ** 6
+        return -(priority + taskId / base)
+
+    def _isRelevant(self, taskId, priority):
+        return (self.tasks_prior.get(taskId, float('-inf')) == priority)
+
+    def __init__(self, tasks):
+        self.tasks_prior = dict()
+        self.tasks_users = dict()
+        self.highets_prior = list()
+        for userId, taskId, priority in tasks:
+            self.add(userId, taskId, priority)
+        
+    def add(self, userId, taskId, priority):
+        self.tasks_prior[taskId] = priority
+        self.tasks_users[taskId] = userId
+        heap_index = self._getHeapIndex(priority, taskId)
+        heapq.heappush(self.highets_prior, (heap_index, taskId, priority))
+        
+    def edit(self, taskId, newPriority):
+        self.tasks_prior[taskId] = newPriority
+        heap_index = self._getHeapIndex(newPriority, taskId)
+        heapq.heappush(self.highets_prior, (heap_index, taskId, newPriority))
+
+    def rmv(self, taskId):
+        self.tasks_prior.pop(taskId)
+        self.tasks_users.pop(taskId)
+
+    def execTop(self):
+        while self.highets_prior and not self._isRelevant(self.highets_prior[0][1], self.highets_prior[0][2]):
+            heapq.heappop(self.highets_prior)
+        if not self.highets_prior:
+            return -1
+        heap_index, taskId, priority = heapq.heappop(self.highets_prior)
+        userId = self.tasks_users[taskId]
+        self.rmv(taskId)
+        return userId
+
+#185. Department Top Three Salaries
+def top_three_salaries(employee, department):
+    def getThreshold(sal_arr):
+        amount = 3
+        sal_vals = sorted(sal_arr.unique(), reverse=True)
+        return sal_vals[min(amount, len(sal_vals))-1]
+        
+    dept_min_sal = dict(employee.groupby('departmentId')['salary'].apply(getThreshold))
+    result = employee[employee['salary']>=employee['departmentId'].map(dept_min_sal)]
+    result = result.merge(department, left_on='departmentId', right_on='id') 
+    result = result[['name_y', 'name_x', 'salary']]
+    result.columns = ['Department', 'Employee', 'Salary']
+    return result
+
+#3484. Design Spreadsheet
+class Spreadsheet(object):
+    @staticmethod
+    def _getGridIndex(cell):
+        row = int(cell[1:]) - 1
+        col = ord(cell[0]) - 65        
+        return row, col
+
+    def _getTermValue(self, term):
+        if re.findall(r'[A-Z]', term):
+            row, col = self._getGridIndex(term)
+            return self.grid[row][col]
+        else:
+            return int(term)            
+    
+    def __init__(self, rows):
+        self.grid = [[0] * 26 for _ in range(rows)]
+
+    def setCell(self, cell, value):
+        row, col = self._getGridIndex(cell)
+        self.grid[row][col] = value
+
+    def resetCell(self, cell):
+        self.setCell(cell, 0)        
+
+    def getValue(self, formula):
+        terms = formula[1:].split('+')
+        term_0 =  self._getTermValue(terms[0])
+        term_1 =  self._getTermValue(terms[1])
+        return term_0 + term_1
+
+#3508. Implement Router
+class Router(object):
+    def _addPacket(self, packet):
+        source, destination, timestamp = packet
+        self.packets_queue.append(packet)
+        self.packets_in_router.add(packet)
+        self.dest_on_time.setdefault(destination, deque([])).append(timestamp)
+
+    def _removePacket(self):
+        packet = self.packets_queue.popleft()
+        self.packets_in_router.remove(packet)
+        source, destination, timestamp = packet
+        self.dest_on_time[destination].popleft()
+        if not self.dest_on_time[destination]:
+            self.dest_on_time.pop(destination)
+        return packet
+    
+    def __init__(self, memoryLimit):
+        self.memory = memoryLimit
+        self.packets_queue = deque([])
+        self.packets_in_router = set()
+        self.dest_on_time = dict()
+
+    def addPacket(self, source, destination, timestamp):
+        packet = (source, destination, timestamp)
+        if packet not in self.packets_in_router:
+            if len(self.packets_in_router) == self.memory:
+                self._removePacket()
+            self._addPacket(packet)
+            return True
+        else:
+            return False
+        
+    def forwardPacket(self):
+        if self.packets_in_router:
+            return self._removePacket()
+        else:
+            return list()
+
+    def getCount(self, destination, startTime, endTime):
+        dest_and_times = self.dest_on_time.get(destination, [])
+        start_index = bisect.bisect_left(dest_and_times, startTime)
+        end_index = bisect.bisect_right(dest_and_times, endTime)
+        return end_index - start_index
+
+#120. Triangle
+class MinimumTotal:
+    def minimumTotal(self, triangle):
+        reversed_triangle = list(reversed(triangle))
+        for prev_row_index, row in enumerate(reversed_triangle[1:]):
+            for col_index, num in enumerate(row):
+                row[col_index] += min(reversed_triangle[prev_row_index][col_index],
+                                      reversed_triangle[prev_row_index][col_index+1])
+        return triangle[0][0]
+
+#611. Valid Triangle Number
+class TriangleNumber:
+    def _findTriangles(self, part):
+        result = 0
+        third = len(part) - 1
+        second = third
+        min_second = (part[third] - part[0] + 1)
+        while second > 0:
+            while (third > second) and (part[second] < min_second):
+                third -= 1
+                min_second = (part[third] - part[0] + 1)
+            result += (third - second)
+            second -= 1
+        return result
+    
+    def triangleNumber(self, nums):
+        result = 0
+        nums.sort()
+        for index in range(len(nums)-2):
+            result += self._findTriangles(nums[index:])
+        return result
+
+#778. Swim in Rising Water
+class SwimInWater:
+    def _getGraph(self, grid):
+        n = len(grid)
+        graph = {}
+        for row_index, row in enumerate(grid):
+            for col_index, num in enumerate(row):
+                for row_add in range(-1, 2):
+                    for col_add in range(-1, 2):
+                        if abs(row_add+col_add) == 1:
+                            next_row = row_index + row_add
+                            next_col = col_index + col_add
+                            if (0 <= next_row < n) and (0 <= next_col < n):
+                                graph.setdefault(num, set()).add(grid[next_row][next_col])
+        return graph
+    
+    def swimInWater(self, grid):
+        graph = self._getGraph(grid)
+        checked = set()
+        prior_queue = [(grid[0][0], grid[0][0])]
+        while prior_queue:
+            value, node = heapq.heappop(prior_queue)
+            if node in checked:
+                continue
+            if node == grid[-1][-1]:
+                return value
+            checked.add(node)
+            for next_node in graph.get(node, []):
+                if next_node in checked:
+                    continue
+                next_value = max(value, next_node)
+                heapq.heappush(prior_queue, (next_value, next_node))
+
+#1488. Avoid Flood in The City
+class AvoidFlood:
+    def avoidFlood(self, rains):
+        nums_index = dict()
+        replace_num = 0
+        for index, num in enumerate(rains):
+            if num > 0:
+                nums_index.setdefault(num, deque([])).append(index)
+                replace_num = num
+        full_lakes = set()
+        result = list()
+        nearest_index = []
+        for num in rains:
+            if num in full_lakes:
+                return []
+            elif num > 0:
+                result.append(-1)
+                nums_index[num].popleft()
+                if nums_index[num]:
+                    heapq.heappush(nearest_index, nums_index[num][0])
+                full_lakes.add(num)
+            else:
+                if nearest_index:
+                    replace_num = rains[heapq.heappop(nearest_index)]
+                    full_lakes.remove(replace_num)
+                result.append(replace_num)
+        return result
+
+#2300. Successful Pairs of Spells and Potions
+class SuccessfulPairs:
+    def successfulPairs(self, spells, potions, success):
+        potions.sort()
+        result = []
+        for spell in spells:
+            min_potion = success // spell
+            min_potion += (min_potion * spell != success)
+            result.append(len(potions)-bisect.bisect_left(potions, min_potion))
+        return result
+
+#3494. Find the Minimum Amount of Time to Brew Potions
+class MinTime:
+    def minTime(self, skill, mana):
+        n, m = len(mana), len(skill)
+        prefix = [0]
+        for val in skill[:-1]:
+            prefix.append(prefix[-1]+val)
+        start_time = 0
+        for index_mana, mana_val in enumerate(mana):
+            times = []
+            for index_skill, skill_val in enumerate(skill):
+                prev_end = times[-1] if times else start_time
+                times.append(prev_end+skill_val*mana_val)
+                if index_mana + 1 < n:
+                    start_time = max(start_time, times[-1]-prefix[index_skill]*mana[index_mana+1])
+            if index_mana + 1 == n:
+                return times[-1]
+
+#165. Compare Version Numbers
+class CompareVersion:
+    def _getRevisions(self, version):
+        return [int(revision) for revision in version.split('.')]
+
+    def _fillRevisionsWithZero(self, revisions, target_size):
+        revisions.extend([0]*(target_size-len(revisions)))
+    
+    def compareVersion(self, version1, version2):
+        revisions_1 = self._getRevisions(version1)
+        revisions_2 = self._getRevisions(version2)
+        target_size = max(len(revisions_1), len(revisions_2))
+        self._fillRevisionsWithZero(revisions_1, target_size)
+        self._fillRevisionsWithZero(revisions_2, target_size)
+        for rev_1, rev_2 in zip(revisions_1, revisions_2):
+            if rev_1 > rev_2:
+                return 1
+            elif rev_1 < rev_2:
+                return -1
+        return 0
+
+#166. Fraction to Recurring Decimal
+class FractionToDecimal:
+    @staticmethod
+    def _makeDivision(num, denom):
+        res_part = []
+        while denom > num:
+            res_part.append('0')
+            num *= 10
+        int_part = num // denom
+        res_part.append(str(int_part))
+        remain = 10 * (num - denom * int_part)
+        return ''.join(res_part), remain
+    
+    def fractionToDecimal(self, numerator, denominator):
+        num, denom = abs(numerator), abs(denominator)
+        int_part = num // denom
+        result = [str(int_part)]
+        num = 10 * (num - denom * int_part)
+        remainders = {num: 1}
+        index = 1
+        while num != 0:
+            res_part, num = self._makeDivision(num, denom)
+            result.append(res_part)
+            index += 1
+            if num in remainders:
+                result.insert(remainders[num], '(')
+                result.append(')')
+                break
+            remainders[num] = index
+        if len(result) > 1:
+            result.insert(1, '.')
+        if not (numerator >= 0 and denominator > 0) and not (numerator <= 0 and denominator < 0):
+            result.insert(0, '-')
+        return ''.join(result)
+
+#3100. Water Bottles II
+class MaxBottlesDrunk:
+    def maxBottlesDrunk(self, numBottles, numExchange):
+        result = 0
+        while numBottles > 0:
+            result += min(numBottles, numExchange)
+            numBottles += 1 - numExchange
+            numExchange += 1
+        return result
+
+#3147. Taking Maximum Energy From the Mystic Dungeon
+class MaximumEnergy:
+    def maximumEnergy(self, energy, k):
+        result = float('-inf')
+        for index in range(len(energy)-1, -1, -1):
+            result = max(result, energy[index])
+            if index >= k:
+                energy[index-k] += energy[index]
+        return result
+
+#3350. Adjacent Increasing Subarrays Detection II
+class MaxIncreasingSubarrays:
+    def maxIncreasingSubarrays(self, nums):
+        seq_index, seq_length = 0, 1
+        seqs = {}
+        for index, num in enumerate(nums[1:]):
+            if num > nums[index]:
+                seq_length += 1
+            else:
+                seqs[seq_index] = seq_length
+                seq_index += 1
+                seq_length = 1
+        seqs[seq_index] = seq_length
+        result = 0
+        for index in range(seq_index+1):
+            max_length = max(seqs[index]//2, min(seqs[index], seqs[index+1] if index < seq_index else 0)) 
+            result = max(result, max_length)
+        return result
+
+#2273. Find Resultant Array After Removing Anagrams
+class RemoveAnagrams:
+    @staticmethod
+    def _getLetters(string):
+        result = {}
+        for char in string:
+            result[char] = result.setdefault(char, 0) + 1
+        return result
+
+    @staticmethod
+    def _isAnagramsSame(anagram_1, anagram_2):
+        if anagram_1.keys() ^ anagram_2.keys():
+            return False
+        for key, val in anagram_1.items():
+            if val != anagram_2[key]:
+                return False
+        return True
+        
+    def removeAnagrams(self, words):
+        anagrams = [self._getLetters(words[0])]
+        result = [words[0]]
+        for word in words[1:]:
+            word_anagram = self._getLetters(word)
+            if not self._isAnagramsSame(anagrams[-1], word_anagram):
+                anagrams.append(word_anagram)
+                result.append(word)
+        return result
+
+#3461. Check If Digits Are Equal in String After Operations I
+class HasSameDigits:
+    def _makeOperations(self, arr):
+        return [(num+arr[index])%10 for index, num in enumerate(arr[1:])]
+    
+    def hasSameDigits(self, s):
+        arr = list(map(int, s))
+        while len(arr) > 2:
+            arr = self._makeOperations(arr)
+        return arr[0] == arr[1]

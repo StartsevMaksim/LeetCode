@@ -9796,3 +9796,98 @@ class HasSameDigits:
         while len(arr) > 2:
             arr = self._makeOperations(arr)
         return arr[0] == arr[1]
+
+#2598. Smallest Missing Non-negative Integer After Operations
+class FindSmallestInteger:
+    @staticmethod
+    def _getMod(num, value):
+        if num >= 0:
+            return num % value
+        else:
+            amount = 1 + (abs(num) - 1) // value
+            return num + value * amount
+   
+    def findSmallestInteger(self, nums, value):
+        mods = {}
+        for num in nums:
+            mod = self._getMod(num, value)
+            mods[mod] = mods.setdefault(mod, 0) + 1
+        min_amount, mid_mod = float('inf'), 0
+        for mod in range(value):
+            if mod not in mods:
+                return mod
+            if mods[mod] < min_amount:
+                min_amount = mods[mod]
+                min_mod = mod
+        return min_amount * value + min_mod
+
+#3349. Adjacent Increasing Subarrays Detection I
+class HasIncreasingSubarrays:
+    def hasIncreasingSubarrays(self, nums, k):
+        seq_index, seq_length = 0, 1
+        seqs = {}
+        for index, num in enumerate(nums[1:]):
+            if num > nums[index]:
+                seq_length += 1
+            else:
+                seqs[seq_index] = seq_length
+                seq_index += 1
+                seq_length = 1
+        seqs[seq_index] = seq_length
+        for index in range(seq_index+1):
+            if seqs[index] < k:
+                continue
+            if ((seqs[index] >= 2 * k)
+                or ((index < seq_index) and seqs[index+1] >= k)):
+                return True
+        return False
+
+#3216. Lexicographically Smallest String After a Swap
+class GetSmallestString:
+    def getSmallestString(self, s):
+        num_arr = [int(char) for char in s]
+        for prev_index, num in enumerate(num_arr[1:]):
+            if (num_arr[prev_index]%2 == num%2) and (num_arr[prev_index] > num):
+                num_arr[prev_index], num_arr[prev_index+1] = num, num_arr[prev_index]
+                break
+        return ''.join(map(str, num_arr))
+
+#3397. Maximum Number of Distinct Elements After Operations
+class MaxDistinctElements:
+    def maxDistinctElements(self, nums, k):
+        nums.sort()
+        nums[0] -= k
+        for index in range(1, len(nums)):
+            nums[index] = min(max(nums[index-1]+1, nums[index]-k), nums[index]+k)
+        return len(set(nums))
+
+#2011. Final Value of Variable After Performing Operations
+class FinalValueAfterOperations:
+    def finalValueAfterOperations(self, operations):
+        result = 0
+        for operation in operations:
+            if (operation[0] == '+') or (operation[-1] == '+'):
+                result += 1
+            else:
+                result -= 1
+        return result
+
+#3346. Maximum Frequency of an Element After Performing Operations I
+class MaxFrequency:
+    def _getFreqDict(self, nums):
+        result = {}
+        for num in nums:
+            result[num] = result.setdefault(num, 0) + 1
+        return result
+
+    def maxFrequency(self, nums, k, numOperations):
+        freqs = self._getFreqDict(nums)
+        left, right = 0, 0
+        result = 0
+        nums = sorted(freqs.keys())
+        while right < len(nums):
+            while (right-left>numOperations) or (nums[right]-nums[left]>k):
+                left += 1
+            result = max(result, freqs[nums[right]]+right-left)
+            right += 1
+        return result

@@ -6552,6 +6552,22 @@ class ClosestPrimes:
                     result = [prime_nums[index], prime_nums[index+1]]
         return result
 
+#3300. Minimum Element After Replacement With Digit Sum
+class MinElement:
+    @staticmethod
+    def getDigitSum(num):
+        result = 0
+        while num > 0:
+            result += num % 10
+            num //= 10
+        return result
+        
+    def minElement(self, nums):
+        result = float('inf')
+        for num in nums:
+            result = min(result, self.getDigitSum(num))
+        return result
+
 #50. Pow(x, n)
 class MyPow:
     def _pow(self, num, degree, sign):
@@ -9890,4 +9906,773 @@ class MaxFrequency:
                 left += 1
             result = max(result, freqs[nums[right]]+right-left)
             right += 1
+        return result
+
+#2125. Number of Laser Beams in a Bank
+class NumberOfBeams:
+    def numberOfBeams(self, bank):
+        prev_lasers = 0
+        result = 0
+        for row in bank:
+            cur_lasers = functools.reduce(lambda x,y: x+int(y), row, 0)
+            if cur_lasers > 0:
+                result += cur_lasers * prev_lasers
+                prev_lasers = cur_lasers
+        return result
+
+#2872. Maximum Number of K-Divisible Components
+class MaxKDivisibleComponents:
+    def _getGraph(self, edges):
+        graph = {}
+        for node_1, node_2 in edges:
+            graph.setdefault(node_1, set()).add(node_2)
+            graph.setdefault(node_2, set()).add(node_1)
+        return graph
+        
+    def maxKDivisibleComponents(self, n, edges, values, k):
+        graph = self._getGraph(edges)
+        leafs = deque([node for node, neighbours in graph.items() if len(neighbours)==1])
+        if not leafs:
+            leafs.append(0)
+        result = 0
+        while leafs:
+            cur_leaf = leafs.popleft()
+            if graph.get(cur_leaf, None):
+                cur_parent = graph.pop(cur_leaf).pop()
+                graph[cur_parent].remove(cur_leaf)
+                if len(graph[cur_parent]) == 1:
+                    leafs.append(cur_parent)
+            if values[cur_leaf] % k == 0:
+                result += 1
+            else:
+                values[cur_parent] += values[cur_leaf]
+        return result
+
+#3512. Minimum Operations to Make Array Sum Divisible by K
+class MinOperations:
+    def minOperations(self, nums, k):
+        return sum(nums) % k
+
+#3623. Count Number of Trapezoids I
+class CountTrapezoids:
+    def _getLvls(self, points):
+        lvls = {}
+        for x, y in points:
+            lvls[y] = lvls.setdefault(y, 0) + 1
+        return lvls
+        
+    def countTrapezoids(self, points):
+        lvls = self._getLvls(points)
+        modulo = 10 ** 9 + 7
+        result, full_amount = 0, 0
+        for y, amount in sorted(lvls.items()):
+            cur_amount = amount * (amount - 1) // 2
+            result += (cur_amount * full_amount)
+            result %= modulo
+            full_amount += cur_amount
+        return result
+
+#3381. Maximum Subarray Sum With Length Divisible by K
+class MaxSubarraySum:
+    def _getPrefix(self, nums):
+        prefix = [0]
+        for num in nums:
+            prefix.append(prefix[-1]+num)
+        return prefix
+    
+    def maxSubarraySum(self, nums, k):
+        prefix_sum = self._getPrefix(nums)
+        min_prefix, result = {}, {}
+        for index, val in enumerate(prefix_sum):
+            mod = index % k
+            if mod in min_prefix:
+                result[mod] = max(result.get(mod, float('-inf')), val-min_prefix[mod])
+            min_prefix[mod] = min(min_prefix.get(mod, float('inf')), val)
+        return max(result.values())
+
+#3583. Count Special Triplets
+class SpecialTriplets:
+    def _findCombinations(self, arr, threshold):
+        left = bisect.bisect(arr, threshold)
+        return left * (len(arr) - left)
+
+    def _findCombinationsForZero(self, zero_arr):
+        n = max(0, len(zero_arr) - 2)
+        return (n ** 3 + 3 * n ** 2 + 2 * n) // 6
+        
+    def specialTriplets(self, nums):
+        nums_index = {}
+        for index, num in enumerate(nums):
+            nums_index.setdefault(num, list()).append(index)
+        modulo = 10 ** 9 + 7
+        result = self._findCombinationsForZero(nums_index.pop(0, [])) % modulo 
+        for num, indexes in nums_index.items():
+            arr = nums_index.get(num*2, [])
+            if arr:
+                for threshold in indexes:
+                    result += self._findCombinations(arr, threshold)
+                    result %= modulo
+        return result
+
+#2110. Number of Smooth Descent Periods of a Stock
+class GetDescentPeriods:
+    @staticmethod
+    @functools.cache
+    def _getCombinations(n):
+        return (n + 1) * n // 2
+    
+    def getDescentPeriods(self, prices):
+        prices.append(float('inf'))
+        result, period_length = 0, 1
+        for index, num in enumerate(prices[1:]):
+            if prices[index] - num == 1:
+                period_length += 1
+            else:
+                result += self._getCombinations(period_length)
+                period_length = 1
+        return result
+
+#3433. Count Mentions Per User
+class CountMentions:    
+    def countMentions(self, numberOfUsers, events):
+        events = list(map(lambda x: (int(x[1])+(x[0]=='MESSAGE')/2, x[0], x[2]), events))
+        heapq.heapify(events)
+        result = [0] * numberOfUsers
+        active_users = set(user for user in range(numberOfUsers))
+        while events:
+            cur_time, message_type, users = heapq.heappop(events)
+            if message_type == 'OFFLINE':
+                if int(users) in active_users:
+                    active_users.remove(int(users))
+                    heapq.heappush(events, (cur_time+60, 'ONLINE', int(users)))
+            elif message_type == 'ONLINE':
+                active_users.add(users)
+                
+            else:
+                if users == 'ALL':
+                    for index in range(len(result)):
+                        result[index] += 1
+                elif users == 'HERE':
+                    for index in active_users:
+                        result[index] += 1
+                else:
+                    for user_str in users.split():
+                        user_index = int(user_str[2:])
+                        result[user_index] += 1
+        return result
+
+#66. Plus One
+class PlusOne:
+    def plusOne(self, digits):
+        result, memory = deque([]), 1
+        for num in digits[::-1]:
+            new_num = num + memory
+            new_digit = new_num % 10
+            memory = new_num // 10
+            result.appendleft(new_digit)
+        if memory == 1:
+            result.appendleft(memory)
+        return list(result)
+
+#1161. Maximum Level Sum of a Binary Tree
+class MaxLevelSum:
+    def maxLevelSum(self, root):
+        lvl_value = defaultdict(int)
+        stack = deque([(root, 1)])
+        while stack:
+            node, lvl = stack.popleft()
+            lvl_value[lvl] += node.val
+            if node.left:
+                stack.append((node.left, lvl+1))
+            if node.right:
+                stack.append((node.right, lvl+1))
+
+        res_lvl, res_val = 0, float('-inf')
+        for lvl, val in lvl_value.items():
+            if val > res_val:
+                res_val = val
+                res_lvl = lvl
+            elif (val == res_val) and (lvl < res_lvl):
+                res_lvl = lvl
+        return res_lvl
+
+#1975. Maximum Matrix Sum
+class MaxMatrixSum:
+    def maxMatrixSum(self, matrix):
+        greatest_neg, least_pos, neg_amount, full_sum = float('-inf'), float('inf'), 0, 0
+        for row in matrix:
+            for num in row:
+                full_sum += abs(num)
+                if num < 0:
+                    greatest_neg = max(greatest_neg, num)
+                    neg_amount += 1
+                else:
+                    least_pos = min(least_pos, num)
+        if neg_amount % 2 == 0:
+            least_pos = 0
+        return full_sum - 2 * min(least_pos, -greatest_neg)
+
+#1292. Maximum Side Length of a Square with Sum Less than or Equal to Threshold
+class MaxSideLength:
+    def _buildPrefix(self, matrix):
+        n, m = len(matrix), len(matrix[0])
+        prefix = [[0]*(m+1)]
+        for row_index, row in enumerate(matrix):
+            prefix.append([0])
+            for col_index, num in enumerate(row, 1):
+                new_num = prefix[-1][col_index-1] + num + prefix[-2][col_index] - prefix[-2][col_index-1]
+                prefix[-1].append(new_num)
+        return prefix
+    
+    def _findSqrSum(self, side_length, prefix, i, j):
+        if (i - side_length < 0) or (j - side_length < 0):
+            return float('inf')
+        return prefix[i][j] - prefix[i][j-side_length] - prefix[i-side_length][j] + prefix[i-side_length][j-side_length]
+        
+    def maxSideLength(self, mat, threshold):
+        prefix = self._buildPrefix(mat)
+        side_length = 1
+        for row_index, row in enumerate(prefix[1:], 1):
+            for col_index, num in enumerate(row[1:], 1):
+                sqr_sum = self._findSqrSum(side_length, prefix, row_index, col_index)
+                if sqr_sum <= threshold:
+                    side_length += 1
+        return side_length - 1
+
+#3314. Construct the Minimum Bitwise Array I
+class MinBitwiseArray:
+    def _find(self, num):
+        if num % 2 == 0:
+            return -1
+        num //= 2
+        result, degree, degree_flag = 0, 0, True
+        while num > 0:
+            if (num % 2 == 0) and degree_flag:
+                degree += 1
+                degree_flag = False
+            result += (num % 2) * 2 ** degree
+            num //= 2
+            degree += 1
+        return result            
+    
+    def minBitwiseArray(self, nums):
+        return [self._find(num) for num in nums]
+
+#3510. Minimum Pair Removal to Sort Array II
+class Node:
+    def __init__(self, val, distance, prev_node=None, next_node=None):
+        self.val = val
+        self.distance = distance
+        self.prev_node = prev_node
+        self.next_node = next_node
+
+class MinimumPairRemoval(object):
+    def _replace(self, node_left, node_right):
+        prev_node, next_node = node_left.prev_node, node_right.next_node
+        new_node = Node(node_left.val+node_right.val,
+                        node_left.distance,
+                        prev_node,
+                        next_node)
+        self.nodes_.remove(node_left)
+        self.nodes_.remove(node_right)
+        self.errors_.discard(node_left)
+        self.errors_.discard(node_right)
+        self.errors_.discard(prev_node)
+        if prev_node:
+            prev_node.next_node = new_node
+            if prev_node.val > new_node.val:
+                self.errors_.add(prev_node)
+        if next_node:
+            next_node.prev_node = new_node
+            if new_node.val > next_node.val:
+                self.errors_.add(new_node)
+        self.nodes_.add(new_node)
+        return new_node
+
+    def _insertHeap(self, node):
+        if node.prev_node:
+            new_sum = node.prev_node.val + node.val
+            heapq.heappush(self.heap_sum_, (new_sum, node.prev_node.distance, self.counter_, (node.prev_node, node)))
+            self.counter_ += 1
+        if node.next_node:
+            new_sum = node.val + node.next_node.val
+            heapq.heappush(self.heap_sum_, (new_sum, node.distance, self.counter_, (node, node.next_node)))
+            self.counter_ += 1
+
+    def _popHeap(self):
+        min_sum, min_distance, counter, node_pair = heapq.heappop(self.heap_sum_)
+        return node_pair
+
+    def _append(self, node):
+        self.nodes_.add(node)
+        if node.prev_node:
+            node.prev_node.next_node = node
+            if node.prev_node.val > node.val:
+                self.errors_.add(node.prev_node)
+        
+    def minimumPairRemoval(self, nums):
+        self.nodes_, self.errors_, self.heap_sum_, self.heap_index_, self.counter_ = set(), set(), list(), dict(), 0
+        prev_node = Node(nums[0], 0)
+        self._append(prev_node)
+        for num in nums[1:]:
+            node = Node(num, prev_node.distance+1, prev_node)
+            self._append(node)
+            self._insertHeap(node)
+            prev_node = node
+        result = 0
+        while self.errors_:
+            node_left, node_right = self._popHeap()
+            if node_left in self.nodes_ and node_right in self.nodes_:
+                new_node = self._replace(node_left, node_right)
+                self._insertHeap(new_node)
+                result += 1
+        return result
+
+#1200. Minimum Absolute Difference
+class MinimumAbsDifference:
+    def minimumAbsDifference(self, arr):
+        sorted_arr = sorted(arr)
+        diff_dict = {}
+        for index, num in enumerate(sorted_arr[1:]):
+            diff_dict.setdefault(num-sorted_arr[index], list()).append([sorted_arr[index], num])
+        return min(diff_dict.items())[1]
+
+#3650. Minimum Cost Path with Edge Reversals
+class MinCost:
+    def minCost(self, n, edges):
+        node_vals = {node: float('inf') for node in range(n)}
+        edges_dict, edges_vals = defaultdict(set), defaultdict(lambda: float('inf'))
+        for begin, end, val in edges:
+            if begin != end:
+                edges_dict[begin].add(end)
+                edges_vals[(begin, end)] = min(edges_vals[(begin, end)], val)
+
+                edges_dict[end].add(begin)
+                edges_vals[(end, begin)] = min(edges_vals[(end, begin)], 2*val)
+
+        heap_node = [(0, 0)]
+        node_vals[0] = 0
+        while heap_node:
+            min_val, min_node = heapq.heappop(heap_node)
+            for next_node in edges_dict.get(min_node, []):
+                next_val = min_val + edges_vals[(min_node, next_node)]
+                if next_val < node_vals[next_node]:
+                    node_vals[next_node] = next_val
+                    heapq.heappush(heap_node, (next_val, next_node))
+        result = node_vals[n-1]
+        return result if result < float('inf') else -1
+
+#1984. Minimum Difference Between Highest and Lowest of K Scores
+class MinimumDifference:
+    def minimumDifference(self, nums, k):
+        if k == 1:
+            return 0
+        nums.sort()
+        result = float('inf')
+        for index, first in enumerate(nums[:-k+1]):
+            last = nums[index+k-1]
+            result = min(result, last-first)
+        return result
+
+#3651. Minimum Cost Path with Teleportations
+class MinCost(object):
+    def _teleport(self, grid, normal_matrix):
+        value_cost = defaultdict(lambda: float('inf'))
+        for i, row in enumerate(grid):
+            for j, val in enumerate(row):
+                value_cost[val] = min(value_cost[val], normal_matrix[i][j])
+        prefix = deque([])
+        min_cost = float('inf')
+        for val, cost in sorted(value_cost.items(), reverse=True):
+            min_cost = min(min_cost, cost)
+            prefix.appendleft((val, min_cost))
+        return prefix
+
+    def _teleportStep(self, grid, prefix):
+        return [[prefix[bisect.bisect(prefix, (num,))][1] for num in row] for row in grid]
+        
+    def _normalStep(self, grid, teleport_matrix):
+        normal_matrix = []
+        for i, row in enumerate(grid):
+            next_row = []
+            for j, num in enumerate(row):
+                teleport_val = teleport_matrix[i][j] if teleport_matrix else float('inf')
+                if (i == 0) and (j == 0):
+                    next_row.append(0)
+                elif (i == 0):
+                    next_row.append(min(teleport_val, next_row[-1]+num))
+                elif (j == 0):
+                    next_row.append(min(teleport_val, normal_matrix[-1][j]+num))
+                else:
+                    next_row.append(min(teleport_val,
+                                        min(next_row[-1], normal_matrix[-1][j])+num))
+            normal_matrix.append(next_row)
+        return normal_matrix
+        
+    def minCost(self, grid, k):
+        normal_matrix = self._normalStep(grid, None)
+        for _ in range(k):
+            prefix = self._teleport(grid, normal_matrix)
+            teleport_matrix = self._teleportStep(grid, prefix)
+            normal_matrix = self._normalStep(grid, teleport_matrix)
+        return normal_matrix[-1][-1]
+
+#3713. Longest Balanced Substring I
+class LongestBalanced:
+    def _add(self, letter):
+        self.letter_amounts[letter] += 1
+        if self.letter_amounts[letter] > 1:
+            self.amount_letters[self.letter_amounts[letter]-1].remove(letter)
+            if not self.amount_letters[self.letter_amounts[letter]-1]:
+                self.amount_letters.pop(self.letter_amounts[letter]-1)
+        self.amount_letters[self.letter_amounts[letter]].add(letter)
+    
+    def longestBalanced(self, s):
+        result = 0
+        for start in range(len(s)):
+            self.letter_amounts = defaultdict(int)
+            self.amount_letters = defaultdict(set)
+            for index, letter in enumerate(s[start:]):
+                self._add(letter)
+                if len(self.amount_letters) == 1:
+                    result = max(result, index+1)
+        return result
+
+#3719. Longest Balanced Subarray I
+class LongestBalanced:
+    def longestBalanced(self, nums):
+        result = 0
+        for start in range(len(nums)):
+            even_nums, odd_nums = set(), set()
+            for index, num in enumerate(nums[start:]):
+                if num % 2 == 0:
+                    even_nums.add(num)
+                else:
+                    odd_nums.add(num)
+                if len(even_nums) == len(odd_nums):
+                    result = max(result, index+1)
+        return result
+
+#3010. Divide an Array Into Subarrays With Minimum Cost I
+class MinimumCost:
+    def minimumCost(self, nums):
+        first = nums.pop(0)
+        heapq.heapify(nums)
+        return first + sum(heapq.nsmallest(2, nums))
+
+#3637. Trionic Array I
+class IsTrionic:
+    def isTrionic(self, nums):
+        heights = [-3]
+        for index, num in enumerate(nums[1:]):
+            if (num > nums[index]) and (heights[-1] != 1):
+                heights.append(1)
+            elif (num < nums[index]) and (heights[-1] != -1):
+                heights.append(-1)
+            elif (num == nums[index]) and (heights[-1] != 0):
+                heights.append(0)
+        return (len(heights) == 4
+                and heights[1] == 1 
+                and heights[2] == -1 
+                and heights[3] == 1)
+
+#696. Count Binary Substrings
+class CountBinarySubstrings:
+    def countBinarySubstrings(self, s):
+        grouped = [1]
+        for index, char in enumerate(s[1:]):
+            if char != s[index]:
+                grouped.append(0)
+            grouped[-1] += 1
+        result = 0
+        for index, num in enumerate(grouped[1:]):
+            result += min(num, grouped[index])
+        return result
+
+#799. Champagne Tower
+class ChampagneTower:
+    def champagneTower(self, poured, query_row, query_glass):
+        levels = [[poured]]
+        for lvl_index in range(2, 101):
+            new_lvl = [0] * lvl_index
+            break_flag = True
+            for index, num in enumerate(levels[-1]):
+                new_num = max(0, (num - 1) / 2)
+                new_lvl[index] += new_num
+                new_lvl[index+1] += new_num
+                if (new_lvl[index] != 0) or (new_lvl[index+1] != 0):
+                    break_flag = False
+            if break_flag:
+                break
+            levels.append(new_lvl)
+        print(len(levels))
+        if len(levels) <= query_row:
+            return 0
+        return min(levels[query_row][query_glass], 1)
+
+#695. Max Area of Island
+class MaxAreaOfIsland:
+    def getIslandArea(self, grid, start_row, start_col):
+        area = 0
+        n, m = len(grid), len(grid[0])
+        queue = {(start_row, start_col)}
+        while queue:
+            row, col = queue.pop()
+            area += 1
+            grid[row][col] = 0
+            for next_row in range(max(0, row-1), min(row+2, n)):
+                for next_col in range(max(0, col-1), min(col+2, m)):
+                    if (abs(row-next_row) + abs(col-next_col) == 1) and (grid[next_row][next_col] == 1):
+                        queue.add((next_row, next_col))
+        return area
+    
+    def maxAreaOfIsland(self, grid):
+        result = 0
+        n, m = len(grid), len(grid[0])
+        for row_index in range(n):
+            for col_index in range(m):
+                if grid[row_index][col_index] == 1:
+                    result = max(result, self.getIslandArea(grid, row_index, col_index))
+        return result
+
+#419. Battleships in a Board
+class CountBattleships:
+    def countBattleships(self, board):
+        result = 0
+        for row_index, row in enumerate(board):
+            for col_index, char in enumerate(row):
+                if (char == 'X'
+                    and (col_index == 0 or board[row_index][col_index-1] == '.')
+                    and (row_index == 0 or board[row_index-1][col_index] == '.')):
+                    result += 1
+        return result
+
+#3567. Minimum Absolute Difference in Sliding Submatrix
+class MinAbsDiff:
+    def minAbsDiff(self, grid, k):
+        result = []
+        m, n = len(grid), len(grid[0])
+        for corner_row in range(m-k+1):
+            result_row = []
+            for corner_col in range(n-k+1):
+                submatrix_nums = set()
+                for row in grid[corner_row:corner_row+k]:
+                    submatrix_nums.update(list(row[corner_col:corner_col+k]))
+                submatrix_nums = sorted(submatrix_nums)
+                min_diff = float('inf')
+                for index, num in enumerate(submatrix_nums[1:]):
+                    min_diff = min(min_diff, num-submatrix_nums[index])
+                result_row.append(0 if min_diff==float('inf') else min_diff)
+            result.append(result_row)
+        return result
+
+#2452. Words Within Two Edits of Dictionary
+class TwoEditWords:
+    @staticmethod
+    def _compare(string, key, limit):
+        for string_letter, key_letter in zip(string, key):
+            limit -= (string_letter != key_letter)
+            if limit < 0:
+                return False
+        return True
+    
+    def twoEditWords(self, queries, dictionary):
+        result = []
+        for string in queries:
+            for key in dictionary:
+                if self._compare(string, key, 2):
+                    result.append(string)
+                    break
+        return result
+
+#1722. Minimize Hamming Distance After Swap Operations
+class MinimumHammingDistance:
+    def dfs(self, root, graph, unchecked):
+        result = []
+        stack = deque([root])
+        while stack:
+            cur_node = stack.pop()
+            result.append(cur_node)
+            for next_node in graph.get(cur_node, []):
+                if next_node in unchecked:
+                    stack.append(next_node)
+                    unchecked.remove(next_node)
+        return result
+
+    def HammingDistance(self, indexes, source, target):
+        diff = defaultdict(int)
+        for index in indexes:
+            diff[source[index]] += 1
+            diff[target[index]] -= 1
+        return functools.reduce(lambda x,y: x+abs(y), diff.values(), 0) // 2
+    
+    def minimumHammingDistance(self, source, target, allowedSwaps):
+        graph = defaultdict(set)
+        for node_1, node_2 in allowedSwaps:
+            graph[node_1].add(node_2)
+            graph[node_2].add(node_1)
+        unchecked = {node for node in range(len(source))}
+        result = 0
+        while unchecked:
+            root = unchecked.pop()
+            indexes = self.dfs(root, graph, unchecked)
+            result += self.HammingDistance(indexes, source, target)
+        return result
+
+#1306. Jump Game III
+class CanReach:
+    def canReach(self, arr, start):
+        visited = set()
+        stack = deque(start)
+        while stack:
+            cur_index = stack.pop()
+            if arr[cur_index] == 0:
+                return True
+            visited.add(cur_index)
+            next_index = cur_index + arr[cur_index]
+            if (next_index < len(arr)) and (next_index not in visited):
+                stack.append(next_index)
+            next_index = cur_index - arr[cur_index]
+            if (next_index >= 0) and (next_index not in visited):
+                stack.append(next_index)
+        return False
+
+#33. Search in Rotated Sorted Array
+class Search:
+    def search(self, nums, target):
+        left, right = 0, len(nums) - 1
+        while right - left > 1:
+            middle = (left + right) // 2
+            if nums[left] > nums[right]: #Был swap частей
+                if nums[middle] > nums[left]: #Первая часть
+                    if (target >= nums[middle]) or (target < nums[left]):
+                        left = middle
+                    elif nums[left] <= target < nums[middle]:
+                        right = middle
+                else: #Вторая часть
+                    if (target <= nums[middle]) or (target > nums[right]):
+                        right = middle
+                    elif nums[middle] < target <= nums[right]:
+                        left = middle
+            else: 
+                if target <= nums[middle]:
+                    right = middle
+                else:
+                    left = middle
+        if nums[left] == target:
+            return left
+        elif nums[right] == target:
+            return right
+        else:
+            return -1
+
+#1871. Jump Game VII
+class CanReach:
+    def canReach(self, s, minJump, maxJump):
+        if s[-1] == '1':
+            return False
+        ways = [0] * len(s)
+        cur_ways = 0
+        for index in range(len(ways)):
+            cur_ways += ways[index]
+            if (index == 0) or (cur_ways > 0 and s[index] == '0'):
+                jump_index = index + minJump
+                if jump_index < len(s):
+                    ways[jump_index] += 1
+                jump_index = index + maxJump + 1
+                if jump_index < len(s):
+                    ways[jump_index] -= 1
+        return cur_ways > 0
+
+#3120. Count the Number of Special Characters I
+class NumberOfSpecialChars:
+    def _IsSpecial(self, char):
+        return char.lower() in self.letters and char.upper() in self.letters
+    
+    def numberOfSpecialChars(self, word):
+        result = 0
+        self.letters = set()
+        for char in word:
+            if self._IsSpecial(char):
+                continue
+            letters.add(char)
+            result += self._IsSpecial(char)
+        return result
+
+#1340. Jump Game V
+class MaxJumps:
+    def maxJumps(self, arr, d):
+        checked = {}
+        result = 0
+        for start_num, start_index in sorted((num, index) for index, num in enumerate(arr)):
+            max_jumps = 0
+            #Left run
+            for next_index in range(start_index-1, max(-1, start_index-d-1), -1):
+                if arr[next_index] >= start_num:
+                    break
+                max_jumps = max(max_jumps, checked[next_index])
+            #Right run
+            for next_index in range(start_index+1, min(start_index+d+1, len(arr))):
+                if arr[next_index] >= start_num:
+                    break
+                max_jumps = max(max_jumps, checked[next_index])
+            #Saving max jumps
+            checked[start_index] = 1 + max_jumps
+            result = max(result, checked[start_index])
+        return result
+
+#3121. Count the Number of Special Characters II
+class NumberOfSpecialChars:
+    def numberOfSpecialChars(self, word):
+        letters_stage = defaultdict(int)
+        for letter in word:
+            lower_letter = letter.lower()
+            stage = 1 if letter == lower_letter else 2
+            letters_stage[lower_letter] = stage if 0 <= stage - letters_stage[lower_letter] <= 1 else -1
+        return functools.reduce(lambda x,y: x+(y==2), letters_stage.values(), 0)
+
+#3093. Longest Common Suffix Queries
+class Node:
+    def __init__(self, letter):
+        self.letter = letter
+        self.children = dict()
+        self.word_index = -1
+        self.word_length = float('inf')
+
+    def updateWord(self, word_index, word_length):
+        if (word_length < self.word_length
+            or (word_length == self.word_length and word_index < self.word_index)):
+            self.word_index = word_index
+            self.word_length = word_length
+
+    def createChild(self, letter):
+        if letter not in self.children:
+            self.children[letter] = Node(letter)
+        return self.children[letter]
+
+    def getChild(self, letter):
+        return self.children.get(letter)
+    
+class StringIndices:           
+    def stringIndices(self, wordsContainer, wordsQuery):
+        root = Node('')
+        for word_index, word in enumerate(wordsContainer):
+            word_length = len(word)
+            root.updateWord(word_index, word_length)
+            prev_node = root
+            for letter in word[::-1]:
+                next_node = prev_node.createChild(letter)
+                next_node.updateWord(word_index, word_length)
+                prev_node = next_node
+                
+        result = []
+        for word in wordsQuery:
+            best_word_index = root.word_index
+            cur_node = root
+            for letter in word[::-1]:
+                cur_node = cur_node.getChild(letter)
+                if cur_node is None:
+                    break
+                best_word_index = cur_node.word_index
+            result.append(best_word_index)
         return result
